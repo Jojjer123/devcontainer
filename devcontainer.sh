@@ -54,8 +54,11 @@ if ! [ "$REMOTE_USER" == "null" ]; then
     REMOTE_USER="-u ${REMOTE_USER}"
 fi
 
-ARGS=$(echo $CONFIG | jq -r '.build.args | to_entries? | map("--build-arg \(.key)=\"\(.value)\"")? | join(" ")')
-debug "ARGS: ${ARGS}"
+BUILD_ARGS=$(echo $CONFIG | jq -r '.build.args | to_entries? | map("--build-arg \(.key)=\"\(.value)\"")? | join(" ")')
+debug "BUILD_ARGS: ${BUILD_ARGS}"
+
+RUN_ARGS=$(echo $CONFIG | jq -r '.runArgs? | join(" ")')
+debug "RUN_ARGS: ${RUN_ARGS}"
 
 SHELL=$(echo $CONFIG | jq -r '.settings."terminal.integrated.shell.linux"')
 debug "SHELL: ${SHELL}"
@@ -73,7 +76,7 @@ MOUNT="${MOUNT} --mount type=bind,source=${WORKSPACE},target=${WORK_DIR}"
 debug "MOUNT: ${MOUNT}"
 
 echo "Building and starting container"
-DOCKER_IMAGE_HASH=$(docker build -f $DOCKER_FILE $ARGS .)
+DOCKER_IMAGE_HASH=$(docker build -f $DOCKER_FILE $ARGS . | awk '/Successfully built/ {print $NF}')
 debug "DOCKER_IMAGE_HASH: ${DOCKER_IMAGE_HASH}"
 
-docker run -it $REMOTE_USER $PORTS $ENVS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
+docker run -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
