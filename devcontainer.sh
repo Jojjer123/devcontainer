@@ -75,8 +75,11 @@ debug "WORK_DIR: ${WORK_DIR}"
 MOUNT="${MOUNT} --mount type=bind,source=${WORKSPACE},target=${WORK_DIR}"
 debug "MOUNT: ${MOUNT}"
 
-echo "Building and starting container"
 DOCKER_IMAGE_HASH=$(docker build -f $DOCKER_FILE $ARGS . | awk '/Successfully built/ {print $NF}')
 debug "DOCKER_IMAGE_HASH: ${DOCKER_IMAGE_HASH}"
 
-docker run -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
+NAME=$(echo $CONFIG | jq -r '.name')
+debug "NAME: ${NAME}"
+echo "Container name: \"$NAME\""
+
+docker run --name $NAME -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
