@@ -69,11 +69,18 @@ debug "PORTS: ${PORTS}"
 ENVS=$(echo $CONFIG | jq -r '.remoteEnv | to_entries? | map("-e \(.key)=\(.value)")? | join(" ")')
 debug "ENVS: ${ENVS}"
 
+NVIM_PATH=$(echo $CONFIG | jq -r '.nvimPath')
+debug "NVIM_PATH: $NVIM_PATH"
+
 WORK_DIR="/workspace"
 debug "WORK_DIR: ${WORK_DIR}"
 
 MOUNT="${MOUNT} --mount type=bind,source=${WORKSPACE},target=${WORK_DIR}"
 debug "MOUNT: ${MOUNT}"
+
+NVIM_MOUNT=$(echo "--mount type=bind,source=${NVIM_PATH},target=/root/.config/nvim")
+debug "NVIM_MOUNT: ${NVIM_MOUNT}"
+echo "NVIM_MOUNT: \"$NVIM_MOUNT\""
 
 DOCKER_IMAGE_HASH=$(docker build -f $DOCKER_FILE $ARGS . | awk '/Successfully built/ {print $NF}')
 debug "DOCKER_IMAGE_HASH: ${DOCKER_IMAGE_HASH}"
@@ -82,4 +89,5 @@ NAME=$(echo $CONFIG | jq -r '.name')
 debug "NAME: ${NAME}"
 echo "Container name: \"$NAME\""
 
-docker run --name $NAME -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
+echo "Running container with command: docker run --name $NAME $NVIM_MOUNT -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL"
+docker run --name $NAME $NVIM_MOUNT -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
