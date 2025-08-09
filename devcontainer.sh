@@ -19,7 +19,7 @@ debug() {
     fi
 }
 
-WORKSPACE=${1:-`pwd`}
+WORKSPACE=$(pwd)
 CURRENT_DIR=${PWD##*/}
 echo "Using workspace ${WORKSPACE}"
 
@@ -75,19 +75,23 @@ debug "NVIM_PATH: $NVIM_PATH"
 WORK_DIR="/workspace"
 debug "WORK_DIR: ${WORK_DIR}"
 
+debug "WORKSPACE used: \"$WORKSPACE\""
 MOUNT="${MOUNT} --mount type=bind,source=${WORKSPACE},target=${WORK_DIR}"
 debug "MOUNT: ${MOUNT}"
 
 NVIM_MOUNT=$(echo "--mount type=bind,source=${NVIM_PATH},target=/root/.config/nvim")
 debug "NVIM_MOUNT: ${NVIM_MOUNT}"
-echo "NVIM_MOUNT: \"$NVIM_MOUNT\""
-
-DOCKER_IMAGE_HASH=$(docker build -f $DOCKER_FILE $ARGS . | awk '/Successfully built/ {print $NF}')
-debug "DOCKER_IMAGE_HASH: ${DOCKER_IMAGE_HASH}"
 
 NAME=$(echo $CONFIG | jq -r '.name')
 debug "NAME: ${NAME}"
-echo "Container name: \"$NAME\""
 
-echo "Running container with command: docker run --name $NAME $NVIM_MOUNT -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL"
-docker run --name $NAME $NVIM_MOUNT -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $DOCKER_IMAGE_HASH $SHELL
+_=$(docker build -f $DOCKER_FILE -t $NAME $BUILD_ARGS .)
+debug "Docker build: docker build -f $DOCKER_FILE -t $NAME $BUILD_ARGS ."
+#DOCKER_BUILD_OUTPUT=$(docker build -f $DOCKER_FILE $BUILD_ARGS .)
+#debug "DOCKER_BUILD_OUTPUT: ${DOCKER_BUILD_OUTPUT}"
+
+#DOCKER_IMAGE_HASH=$(echo "$DOCKER_BUILD_OUTPUT" | awk '/Successfully built/ {print $NF}' | tr -d '"')
+#debug "DOCKER_IMAGE_HASH: ${DOCKER_IMAGE_HASH}"
+
+debug "Running container with command: docker run --name $NAME $NVIM_MOUNT -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $NAME $SHELL"
+docker run --name $NAME $NVIM_MOUNT -it $RUN_ARGS $PORTS $MOUNT -w $WORK_DIR $NAME $SHELL
